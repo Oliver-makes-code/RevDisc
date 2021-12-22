@@ -21,7 +21,12 @@ const revoltClient = revoltBot.start(keys.revolt);
 discordClient.on("messageCreate", msg => {
     if (msg.channelId != channels.discord) return;
     if (msg.webhookId || msg.author.bot) return;
-    revoltClient.channels.$get(channels.revolt).sendMessage(msg.member?.displayName + ": " + msg.content);
+    let sent = false
+    revoltClient.channels.fetch(channels.revolt).then(channel => {
+        if (sent) return;
+        channel.sendMessage(msg.member?.displayName + ": " + msg.cleanContent);
+        sent = true;
+    });
 });
 
 revoltClient.on("message", msg => {
@@ -30,22 +35,38 @@ revoltClient.on("message", msg => {
     discordClient.channels.fetch(channels.discord).then(c => {
         if (!c?.isText) return;
         let channel: discord.TextChannel = c as discord.TextChannel;
-        channel.fetchWebhooks().then(h => {
+        channel.fetchWebhooks().then(async h => {
             let hooks = h.map(e => e);
+            let sent = false;
             for (let hook of hooks) {
                 if (hook.owner?.id != discordClient.user?.id) continue;
+                let content = msg.content.toString();
+                for (let i of msg.mention_ids? msg.mention_ids: []) {
+                    let user = await revoltClient.users.fetch(i);
+                    content = content.replace("<@"+i+">", "@" + user.username);
+                }
+                while (/<#[A-Z0-9]{26}>/.test(content)) {
+                    let idxStart = content.search(/<#[A-Z0-9]{26}>/) + 2;
+                    let idxEnd = idxStart + 26;
+                    let id = content.substring(idxStart,idxEnd);
+                    let channel = await revoltClient.channels.fetch(id);
+                    content = content.replace("<#"+id+">", "#"+channel.name);
+                }
                 hook.send({
-                    content: msg.content.toString(),
+                    content,
                     username: (msg.member?.nickname? msg.member?.nickname: msg.author?.username) + " | Revolt.chat",
                     avatarURL: msg.member?.generateAvatarURL()? msg.member?.generateAvatarURL(): msg.author?.generateAvatarURL()? msg.author?.generateAvatarURL(): msg.author?.defaultAvatarURL
                 });
-                return;
+                sent = true;
+                break;
             }
-            channel.createWebhook("RevDisc webook").then(hook => {
-                hook.send({
-                    content: msg.content.toString(),
-                });
-            })
+            if (!sent) {
+                channel.createWebhook("RevDisc webook").then(hook => {
+                    hook.send({
+                        content: msg.content.toString(),
+                    });
+                })
+            }
         });
     })
 })
