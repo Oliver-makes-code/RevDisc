@@ -1,3 +1,4 @@
 keys.json
 build/
 node_modules/
+*.tsbuildinfo
