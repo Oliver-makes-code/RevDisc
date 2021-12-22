@@ -11,8 +11,8 @@ type Keys = {
 export const keys: Keys = JSON.parse(fs.readFileSync("./keys.json").toString());
 
 const channels: Keys = {
-    discord: "887139925890314263",
-    revolt: "01FEXPHJH4WSVXFG12SVJV17G7"
+    discord: "872269002259464232",
+    revolt: "01FQHRN0TAXHQZZ43DC0X8DMY3"
 }
 
 let discordWebhook: discord.Webhook;
@@ -22,7 +22,7 @@ const revoltClient = revoltBot.start(keys.revolt);
 
 discordClient.on("messageCreate", msg => {
     if (msg.channelId != channels.discord) return;
-    if (discordWebhook && msg.webhookId == discordWebhook.id) return;
+    if (msg.webhookId || msg.author.bot) return;
     let sent = false;
     revoltClient.channels.fetch(channels.revolt).then(channel => {
         if (sent) return;
