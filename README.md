@@ -2,4 +2,5 @@
 Revolt-Discord single channel link
 
 # Setup:
-Create a text file called `keys.txt` in the root directory of the project, then have line 1 be your discord bot login token, and have line 2 be your revolt bot login token
+Create a text file called `keys.json` in the root directory of the project, then have a key called `discord` with your discord bot token as the value, and then one called `revolt` with your revolt bot token as the value
+After that is done, run `npm run build` then `npm run start` to build and start the bot
